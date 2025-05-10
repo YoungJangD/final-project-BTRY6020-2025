@@ -1,0 +1,286 @@
+---
+title: "Final Project Analysis"
+author: "Young Jang"
+date: "2025-05-06"
+output: html_document
+
+---
+
+# Introduction
+
+The cost of international education is a significant consideration for students worldwide. Understanding the factors that drive tuition fees is crucial for prospective students, educational institutions, and policymakers. This project aims to analyze a dataset containing information about international education costs across various institutions and programs. By employing linear regression modeling, we seek to identify and quantify the impact of several key numeric and categorical factors, specifically Living Cost Index, Insurance USD, Rent USD, Level of study, and Program Duration, on the tuition fees (in USD). The findings will provide insights into the economic determinants of international education costs.
+
+# Methods
+
+We utilize multiple linear regression to model the relationship between the continuous target variable, Tuition_USD, and several predictor variables. The basic form of the model is:
+
+Y=β0+β1X1 +β2X2+⋯+βpXp+ϵ
+
+Where Y represents Tuition_USD (after a log transformation to address initial assumption violations), Xirepresent the predictor variables (Living_Cost_Index, Insurance_USD, Rent_USD, Level (treated as a factor), and Duration_Years), βi are the coefficients quantifying the relationship between each predictor and the target, and ϵ is the error term.
+
+We initially checked the key assumptions of linear regression: linearity, independence of errors, homoscedasticity, normality of errors, and low multicollinearity using visual diagnostics (residual plots, Q-Q plots) and statistical tests (Durbin-Watson, Breusch-Pagan, Shapiro-Wilk, VIF).
+
+Due to initial violations of linearity and heteroscedasticity, we applied a natural logarithm transformation to the Tuition_USD variable. To address the remaining heteroscedasticity, we employed robust standard errors for the coefficient estimates and hypothesis testing using the sandwich and lmtest packages in R. These robust standard errors provide more reliable inference even when the assumption of constant variance of errors is violated.
+
+The coefficients in the log-transformed model are interpreted as the approximate percentage change in Tuition_USD for a one-unit change in the predictor variable (for numeric predictors) or the percentage difference relative to the baseline category (for the factor Level). Hypothesis tests (t-tests) are used to determine the statistical significance of each predictor's coefficient.
+
+## Data Description
+The dataset contains 907 observations with information on international education costs. The key variables for our analysis are:
+
+Tuition_USD (Continuous - Target): The tuition fees for the program in US dollars. This variable was log-transformed for the modeling process.
+Living_Cost_Index (Numeric): An index representing the relative cost of living in the city.
+Insurance_USD (Numeric): The annual cost of health insurance in US dollars.
+Rent_USD (Numeric): The average monthly rent in US dollars in the city.
+Level (Categorical): The level of study (Bachelor, Master, PhD). This was treated as a factor in the model, with Bachelor serving as the baseline category.
+Duration_Years (Numeric): The typical duration of the program in years.
+After filtering out rows where Tuition_USD was zero (as the logarithm of zero is undefined), the analysis was conducted on a reduced dataset. The initial exploration of the data and the subsequent regression modeling focused on understanding how these specific factors relate to the cost of international education tuition.
+
+
+## Develope Hypothesis
+Hypothesis 1 (Living Cost Index): 
+Null Hypothesis (H₀): There is no significant linear relationship between the Living Cost Index and Tuition_USD (after log transformation)
+Alternative Hypothesis (H₁): There is a significant linear relationship between the Living Cost Index and Tuition_USD (after log transformation)
+
+Hypothesis 2 (Insurance USD): 
+Null Hypothesis (H₀): There is no significant linear relationship between the cost of Insurance and Tuition_USD (after log transformation)
+Alternative Hypothesis (H₁): There is a significant linear relationship between the cost of Insurance and Tuition_USD (after log transformation)
+
+Hypothesis 3 (Rent USD): 
+Null Hypothesis (H₀): There is no significant linear relationship between the average monthly Rent and Tuition_USD (after log transformation)
+Alternative Hypothesis (H₁): There is a significant linear relationship between the average monthly Rent and Tuition_USD (after log transformation)
+
+Hypothesis 4 (Duration Years): 
+Null Hypothesis (H₀): There is no significant linear relationship between the Duration of the program and Tuition_USD (after log transformation)
+Alternative Hypothesis (H₁): There is a significant linear relationship between the Duration of the program and Tuition_USD (after log transformation)
+
+Hypothesis 5 (Level - Master): 
+Null Hypothesis (H₀): There is no significant difference in Tuition_USD (after log transformation) between Master's programs and Bachelor's programs
+Alternative Hypothesis (H₁): There is a significant difference in Tuition_USD (after log transformation) between Master's programs and Bachelor's programs
+
+Hypothesis 6 (Level - PhD): 
+Null Hypothesis (H₀): There is no significant difference in Tuition_USD (after log transformation) between PhD programs and Bachelor's programs
+Alternative Hypothesis (H₁): There is a significant difference in Tuition_USD (after log transformation) between PhD programs and Bachelor's programs
+
+
+
+```{r}
+library(lmtest)
+library(car)
+library(ggplot2)
+library(dplyr)
+
+International_Education_Costs <- read.csv("C:/Users/brigh/Desktop/Cornell/2025 Spring Cornell/BTRY 6020/Assessment/International_Education_Costs.csv")
+View(International_Education_Costs)
+
+# 1. Initial Exploration (focus on the variables of interest)
+head(International_Education_Costs %>% select(Tuition_USD, Living_Cost_Index, Insurance_USD, Rent_USD, Level, Duration_Years))
+summary(International_Education_Costs %>% select(Tuition_USD, Living_Cost_Index, Insurance_USD, Rent_USD, Level, Duration_Years))
+str(International_Education_Costs %>% select(Tuition_USD, Living_Cost_Index, Insurance_USD, Rent_USD, Level, Duration_Years))
+
+# Convert 'Level' to a factor if it's not already
+International_Education_Costs$Level <- as.factor(International_Education_Costs$Level)
+
+# 2. Build Initial Linear Regression Model (using the specified predictors)
+target_variable <- "Tuition_USD"
+predictors_of_interest <- c("Living_Cost_Index", "Insurance_USD", "Rent_USD", "Level", "Duration_Years")
+formula_str <- paste(target_variable, "~", paste(predictors_of_interest, collapse = " + "))
+initial_model_subset <- lm(formula_str, data = International_Education_Costs)
+summary(initial_model_subset)
+
+# 3. Sanity Checks to Verify Assumptions
+
+# Visual Diagnostics:
+par(mfrow = c(2, 2))
+plot(initial_model_subset) # Checks Linearity and Homoscedasticity (Residuals vs Fitted), Normality (Q-Q plot)
+par(mfrow = c(1, 1))
+
+# Statistical Tests:
+dwtest(initial_model_subset)   # Independence of errors (Durbin-Watson test)
+bptest(initial_model_subset)   # Homoscedasticity (Breusch-Pagan test)
+shapiro.test(residuals(initial_model_subset)) # Normality of residuals (Shapiro-Wilk test)
+vif(initial_model_subset)      # Low Multicollinearity (Variance Inflation Factor)
+```
+
+## Analysis
+
+The initial linear regression model reveals interesting relationships with tuition fees: while a higher living cost index surprisingly suggests a decrease in tuition (β=−769.25), increased insurance (β=13.56) and rent (β=33.54) costs are associated with higher tuition. Notably, Master's programs show a statistically significant lower tuition compared to Bachelor's (β=−3726.97,p<0.05), and although PhD programs also have a lower average tuition (β=−1432.03), this difference is not statistically significant, nor is the apparent negative relationship between program duration and tuition (β=−988.51). Overall, the model explains a substantial 65.6% of the variation in tuition fees (R^2 =0.6581, Adjusted R^2 =0.6559), and the statistically significant F-statistic (p<2.2e−16) confirms that the model as a whole has predictive power.
+
+Despite indications of non-linearity (a curve in the "Residuals vs Fitted" plot), heteroscedasticity (a funnel shape in the "Scale-Location" plot and increasing residual spread), and non-normality (deviations in the "Q-Q Residuals" plot, supported by the Shapiro-Wilk test), along with significant positive autocorrelation (Durbin-Watson statistic = 1.2272, p<2.2e−16), multicollinearity among the predictors appears to be low, as most Variance Inflation Factors (GVIF) are below the common threshold of 5, with Duration_Years slightly exceeding it at 7.67, and the relevant metric for the categorical variable Level (GVIF^(1/(2*Df))) being a comfortable 1.65.
+
+## Liner regression Model
+To enhance the reliability and validity of our linear regression model, we must address the identified violations of its assumptions: for non-linearity and heteroscedasticity, potential remedies include transforming the target variable (Tuition_USD) or predictors, exploring polynomial terms for curvilinear relationships, or employing robust standard errors; given the cross-sectional nature of our data (n=907), the observed autocorrelation likely points to model misspecification, such as omitted variables or an incorrect functional form, rather than a time series issue; and while Ordinary Least Squares (OLS) is generally robust to moderate non-normality, the observed deviations could impact hypothesis testing, suggesting that the transformations considered for linearity and homoscedasticity might also prove beneficial in improving the normality of the residuals.
+
+```{r}
+
+# Filter out rows where Tuition_USD is 0
+filtered_data <- International_Education_Costs %>%
+  filter(Tuition_USD > 0)
+
+# Convert 'Level' to a factor
+filtered_data$Level <- as.factor(filtered_data$Level)
+
+# 2. Build Linear Regression Model with Log-Transformed Target (on filtered data)
+target_variable <- "Tuition_USD"
+predictors_of_interest <- c("Living_Cost_Index", "Insurance_USD", "Rent_USD", "Level", "Duration_Years")
+formula_str_log <- paste("log(", target_variable, ") ~", paste(predictors_of_interest, collapse = " + "))
+model_log_transformed <- lm(formula_str_log, data = filtered_data)
+summary(model_log_transformed)
+
+# 3. Sanity Checks on Transformed Model (on filtered data)
+par(mfrow = c(2, 2))
+plot(model_log_transformed)
+par(mfrow = c(1, 1))
+
+dwtest(model_log_transformed)
+bptest(model_log_transformed)
+shapiro.test(residuals(model_log_transformed))
+vif(model_log_transformed)
+```
+## Analysis
+Following a log transformation of the target variable (Tuition_USD), the coefficients now represent the change in the logarithm of tuition: a one-unit increase in the Living Cost Index is associated with an approximate -3.8% change, while a one USD increase in insurance and rent corresponds to roughly 0.05% and 0.21% increases in tuition, respectively; Master's programs still exhibit a statistically significant lower tuition of approximately -28% compared to Bachelor's, whereas the non-significant lower tuition for PhD programs is about -15%, and each additional year of program duration is associated with an approximate -6.6% change in tuition, also not statistically significant; although the R-squared has decreased to 0.4477 (Adjusted R-squared = 0.4436), indicating that this model explains less variance in the log of tuition, the overall model remains statistically significant (p < 2.2e-16), and the suitability of this transformation hinges on whether it better addresses the previously identified assumption violations.
+
+The sanity checks on the log-transformed model reveal mixed results: the "Residuals vs Fitted" plot shows a possible improvement in linearity with a less pronounced curve, but heteroscedasticity persists as suggested by the "Scale-Location" plot and the increasing spread of residuals; concerningly, the "Q-Q Residuals" plot and a highly significant Shapiro-Wilk test (p<2.2e−16) indicate that the log transformation has not improved the non-normality of the residuals, and similarly, the Durbin-Watson statistic of 1.1123 with a very small p-value (<2.2e−16) confirms that significant positive autocorrelation remains unresolved; on a positive note, multicollinearity continues to appear low based on the VIF values.
+
+While the log transformation might have slightly improved linearity and homoscedasticity, we still have significant violations of:
+Homoscedasticity , Normality  , Independence of Errors (Autocorrelation)
+
+Considering the ongoing violations of model assumptions, we should explore additional strategies: to address heteroscedasticity, Weighted Least Squares (WLS) could be implemented if we can effectively model the variance of the residuals, and further transformations of the predictor variables might also prove beneficial; regarding the persistent autocorrelation in our cross-sectional data (n > 700 after filtering), this likely indicates model misspecification, prompting us to reconsider potential omitted variables or explore alternative functional forms; finally, while the Central Limit Theorem offers some robustness to the non-normality of our coefficient estimates due to the large sample size, the reliability of our t-test p-values might be compromised, suggesting that employing robust standard errors could be a prudent step.
+
+
+## Robust Standard Errors
+
+```{r}
+# Load libraries (already loaded)
+library(sandwich)
+library(lmtest)
+
+target_variable <- "Tuition_USD"
+predictors_of_interest <- c("Living_Cost_Index", "Insurance_USD", "Rent_USD", "Level", "Duration_Years")
+formula_str_log <- paste("log(", target_variable, ") ~", paste(predictors_of_interest, collapse = " + "))
+model_log_robust <- lm(formula_str_log, data = filtered_data)
+
+# Calculate robust standard errors using HC3 estimator (a common type)
+robust_se <- vcovHC(model_log_robust, type = "HC3")
+
+robust_summary <- coeftest(model_log_robust, vcov. = robust_se)
+print(robust_summary)
+
+par(mfrow = c(2, 2))
+plot(model_log_robust)
+par(mfrow = c(1, 1))
+
+dwtest(model_log_robust)
+shapiro.test(residuals(model_log_robust))
+vif(model_log_robust)
+```
+
+## Analysis
+Employing robust standard errors to account for potential heteroscedasticity, the robust summary reveals the following impacts of each feature on the log of Tuition_USD: the intercept is estimated at 9.78; a one-unit increase in the Living Cost Index is associated with a highly significant (p < 2.2e-16) decrease of 0.039 in the log of tuition, translating to approximately 3.9% lower tuition fees; a one USD increase in Insurance cost is linked to a highly significant (p = 0.0001473) increase of 0.00049 in the log of tuition, about a 0.05% rise in fees; similarly, a one USD increase in monthly Rent corresponds to a highly significant (p < 2.2e-16) increase of 0.00205 in the log of tuition, roughly a 0.21% increase in fees; Master's programs show a marginally significant (p = 0.0538731) lower log tuition of 0.328 compared to Bachelor's, suggesting approximately 28% lower fees; however, the difference in log tuition for PhD programs (-0.166, p = 0.1037815) and the effect of program duration (-0.068, p = 0.4645816) are not statistically significant in this model.
+
+Despite the application of a log transformation and the use of robust standard errors, several assumption violations persist: the "Residuals vs Fitted" plot continues to suggest potential non-linearity, and the "Scale-Location" plot still indicates non-constant variance, which could affect the model's efficiency even though robust standard errors improve inference; furthermore, the Shapiro-Wilk test still strongly rejects the normality of the residuals, and the Q-Q plot shows ongoing deviations; most concerningly, the Durbin-Watson test still signals significant autocorrelation, which in our cross-sectional data likely points to model misspecification, such as omitted variables or inadequately captured relationships; while the large sample size offers some protection against the impact of non-normality on coefficient estimates due to the Central Limit Theorem, and robust standard errors enhance the reliability of p-values in the presence of heteroscedasticity, the unresolved autocorrelation remains a key issue that needs further attention.
+
+## Addtional comments.
+In light of the remaining challenges, further steps we could take include: thoroughly investigating the counterintuitive negative relationship observed with the Living Cost Index, which might involve exploring more complex interactions or the influence of omitted variables; examining potential non-linear relationships by incorporating polynomial terms for the numeric predictors; diligently trying to identify and include other relevant predictor variables that are currently missing from the model; and considering alternative modeling techniques if the fundamental assumptions of linear regression continue to be significantly violated despite our efforts.
+
+
+
+## Cross-Validation
+Cross-validation, a crucial technique for estimating a model's ability to generalize to new data, aids in model selection, hyperparameter tuning, and assessing prediction accuracy by addressing overfitting, facilitating comparisons among candidate models, and providing an estimate of out-of-sample error through procedures like splitting data into training and validation sets, training on the former, and evaluating on the latter using common metrics such as MSE, RMSE, MAE, and R^2 for regression, and accuracy, AUC, F1-score, and log-loss for classification.
+
+```{r}
+k <- 10
+n <- nrow(filtered_data)
+
+set.seed(123) 
+folds <- cut(sample(1:n), breaks = k, labels = FALSE)
+
+cv_rmse_glm <- numeric(k)
+
+# Perform k-fold cross-validation using glm()
+for (i in 1:k) {
+  # Create training and validation sets for the current fold
+  validation_indices <- which(folds == i, arr.ind = TRUE)
+  validation_data <- filtered_data[validation_indices, ]
+  training_data <- filtered_data[-validation_indices, ]
+
+    model_glm <- glm(log(Tuition_USD) ~ Living_Cost_Index + Insurance_USD + Rent_USD + Level + Duration_Years,
+                   data = training_data, family = gaussian)
+
+    predictions_glm <- predict(model_glm, newdata = validation_data, type = "response")
+
+  rmse_glm <- sqrt(mean((predictions_glm - log(validation_data$Tuition_USD))^2))
+
+  cv_rmse_glm[i] <- rmse_glm
+}
+
+cat("Cross-Validation RMSE (using glm) values for each fold:\n", cv_rmse_glm, "\n")
+cat("Mean CV RMSE (using glm):", mean(cv_rmse_glm), "\n")
+```
+
+```{r}
+# Build the full model (same as before)
+full_model <- lm(log(Tuition_USD) ~ Living_Cost_Index + Insurance_USD + Rent_USD + Level + Duration_Years,
+                 data = filtered_data)
+
+# based on AIC (both forward and backward steps)
+stepwise_model <- step(full_model, direction = "both", trace = FALSE)
+
+summary(stepwise_model)
+
+```
+## Analysis
+The cross-validation results, displaying RMSE values ranging from about 0.77 to 1.02 across the 10 folds, illustrate the variability in the model's prediction error depending on the specific data subsets used for training and evaluation; the mean CV RMSE of 0.9287 provides an overall estimate of the model's performance on unseen data, and its close proximity to the residual standard error (approximately 0.93) from our robust log-transformed model summary suggests a good level of generalization with no apparent severe overfitting.
+
+## Rationale for considering regularization.
+We should consider regularization techniques primarily for three key reasons: to mitigate the potential instability in coefficient estimates arising from multicollinearity, even if our VIFs are mostly acceptable; to leverage the variable selection capabilities of Lasso (which can drive coefficients to zero) and the balanced approach of Elastic Net; and to potentially enhance the model's ability to generalize to new data by penalizing complexity, especially if some degree of overfitting is present.
+
+```{r}
+# Install and load the glmnet package if you haven't already
+# install.packages("glmnet")
+library(glmnet)
+
+# Convert factor variable 'Level' to dummy variables
+x <- model.matrix(log(Tuition_USD) ~ Living_Cost_Index + Insurance_USD + Rent_USD + Level + Duration_Years, data = filtered_data)[, -1]
+y <- log(filtered_data$Tuition_USD)
+
+# Perform Ridge Regression (alpha = 0)
+ridge_model <- glmnet(x, y, alpha = 0)
+cv_ridge <- cv.glmnet(x, y, alpha = 0, nfolds = 10)
+best_lambda_ridge <- cv_ridge$lambda.min
+ridge_model_best <- glmnet(x, y, alpha = 0, lambda = best_lambda_ridge)
+print("Best Ridge Model Coefficients:")
+print(coef(ridge_model_best))
+
+# Perform Lasso Regression (alpha = 1)
+lasso_model <- glmnet(x, y, alpha = 1)
+cv_lasso <- cv.glmnet(x, y, alpha = 1, nfolds = 10)
+best_lambda_lasso <- cv_lasso$lambda.min
+lasso_model_best <- glmnet(x, y, alpha = 1, lambda = best_lambda_lasso)
+print("\nBest Lasso Model Coefficients:")
+print(coef(lasso_model_best))
+
+# Perform Elastic Net Regression (e.g., alpha = 0.5)
+elastic_model <- glmnet(x, y, alpha = 0.5)
+cv_elastic <- cv.glmnet(x, y, alpha = 0.5, nfolds = 10)
+best_lambda_elastic <- cv_elastic$lambda.min
+elastic_model_best <- glmnet(x, y, alpha = 0.5, lambda = best_lambda_elastic)
+print("\nBest Elastic Net Model Coefficients:")
+print(coef(elastic_model_best))
+```
+## Analysis
+The best Lasso model notably drove the coefficient for Duration_Years to zero, indicating its exclusion as an unimportant predictor through variable selection, while the remaining non-zero coefficients exhibited magnitudes generally similar to the Ridge model, albeit with potentially more shrinkage towards zero, and maintained consistent signs with previous findings; similarly, the best Elastic Net model also zeroed out the Duration_Years coefficient, with its other non-zero coefficients displaying magnitudes between those of Ridge and Lasso, as expected from its combined L1 and L2 penalties; in comparison, both Lasso and Elastic Net suggest that Duration_Years might not be a key predictor in a regularized framework, and all three regularization methods demonstrate coefficient shrinkage to varying extents compared to the original OLS model, potentially leading to more stable and generalizable models, especially considering possible multicollinearity, while the consistent signs of the coefficients across all models (OLS, Ridge, Lasso, Elastic Net) reinforce our confidence in the identified directions of the relationships.
+
+Based on the best Lasso model identified through cross-validation for predicting the log of Tuition_USD, the significant predictors are: a negative coefficient for Living_Cost_Index (-0.0356) indicating approximately 3.5% lower tuition fees for each unit increase; a positive coefficient for Insurance_USD (0.00041) suggesting about a 0.04% increase in tuition per USD increase in cost; a positive coefficient for Rent_USD (0.00200) implying roughly a 0.20% increase in tuition per USD increase in monthly rent; a negative coefficient for LevelMaster (-0.2105) suggesting approximately 19% lower tuition for Master's compared to Bachelor's programs; and a negative coefficient for LevelPhD (-0.1769) indicating about 16% lower tuition for PhD compared to Bachelor's programs; notably, the Lasso model excluded Duration_Years, suggesting it does not contribute a strong independent linear effect on Tuition_USD within this regularized model alongside the other predictors.
+
+## Results
+In our analysis to pinpoint factors influencing international education tuition costs (Tuition_USD), focusing on Living_Cost_Index, Insurance_USD, Rent_USD, Level of study, and Duration_Years, we initially built an Ordinary Least Squares (OLS) model which revealed potential violations of key regression assumptions; to mitigate these, we applied a log transformation to Tuition_USD, yielding some improvement in residual plots but not fully resolving all issues, and subsequently employed robust standard errors for more reliable inference amidst heteroscedasticity; 10-fold cross-validation of this log-transformed model indicated reasonable generalization (mean RMSE ≈ 0.9287); further exploring regularization techniques (Ridge, Lasso, Elastic Net) to enhance generalization and address potential multicollinearity, both Lasso and Elastic Net performed variable selection by excluding Duration_Years; our final interpretation, based on the best Lasso model, suggests that Living_Cost_Index has a statistically significant negative association with tuition (≈ 3.5% lower per unit increase), while Insurance_USD (≈ 0.04% higher per USD increase) and Rent_USD (≈ 0.20% higher per USD increase) show statistically significant positive associations; Master's programs have significantly lower tuition (≈ 19% lower) compared to Bachelor's, and PhD programs also tend to have lower tuition (≈ 16% lower), although this was less statistically significant in the regularized models, with Duration_Years being excluded as a significant predictor by the Lasso model.
+
+## Conclustion
+Our analysis suggests that Living_Cost_Index, Insurance_USD, Rent_USD, and the Level of study are important factors influencing international education tuition costs. Interestingly, higher living costs appear to be associated with lower tuition, a relationship that warrants further investigation beyond the scope of this analysis. As expected, higher insurance and rent costs are associated with higher tuition fees. Master's and PhD programs tend to have lower tuition than Bachelor's programs. The duration of the program, as a linear predictor, did not appear to be a significant factor in the regularized model.
+
+While we addressed some of the violations of linear regression assumptions through log transformation and robust standard errors, potential remaining non-linearity and autocorrelation should be acknowledged as limitations of this model. The use of regularization techniques like Lasso provided a more parsimonious model by performing variable selection.
+
+In conclusion, this analysis provides a valuable approximation of the relationships between the selected factors and international tuition costs. However, future research could explore the counterintuitive relationship with the living cost index, investigate potential non-linear effects, consider additional relevant predictors, and delve into more advanced modeling techniques to further refine our understanding of this complex phenomenon. Remember that our statistical model is a simplification of reality, and further investigation could uncover more nuanced relationships.
+
+
+
