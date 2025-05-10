@@ -72,22 +72,18 @@ library(dplyr)
 International_Education_Costs <- read.csv("C:/Users/brigh/Desktop/Cornell/2025 Spring Cornell/BTRY 6020/Assessment/International_Education_Costs.csv")
 View(International_Education_Costs)
 
-# 1. Initial Exploration (focus on the variables of interest)
 head(International_Education_Costs %>% select(Tuition_USD, Living_Cost_Index, Insurance_USD, Rent_USD, Level, Duration_Years))
 summary(International_Education_Costs %>% select(Tuition_USD, Living_Cost_Index, Insurance_USD, Rent_USD, Level, Duration_Years))
 str(International_Education_Costs %>% select(Tuition_USD, Living_Cost_Index, Insurance_USD, Rent_USD, Level, Duration_Years))
 
-# Convert 'Level' to a factor if it's not already
 International_Education_Costs$Level <- as.factor(International_Education_Costs$Level)
 
-# 2. Build Initial Linear Regression Model (using the specified predictors)
+#Build Initial Linear Regression Model
 target_variable <- "Tuition_USD"
 predictors_of_interest <- c("Living_Cost_Index", "Insurance_USD", "Rent_USD", "Level", "Duration_Years")
 formula_str <- paste(target_variable, "~", paste(predictors_of_interest, collapse = " + "))
 initial_model_subset <- lm(formula_str, data = International_Education_Costs)
 summary(initial_model_subset)
-
-# 3. Sanity Checks to Verify Assumptions
 
 # Visual Diagnostics:
 par(mfrow = c(2, 2))
@@ -119,14 +115,14 @@ filtered_data <- International_Education_Costs %>%
 # Convert 'Level' to a factor
 filtered_data$Level <- as.factor(filtered_data$Level)
 
-# 2. Build Linear Regression Model with Log-Transformed Target (on filtered data)
+# Build Linear Regression Model with Log-Transformed Target 
 target_variable <- "Tuition_USD"
 predictors_of_interest <- c("Living_Cost_Index", "Insurance_USD", "Rent_USD", "Level", "Duration_Years")
 formula_str_log <- paste("log(", target_variable, ") ~", paste(predictors_of_interest, collapse = " + "))
 model_log_transformed <- lm(formula_str_log, data = filtered_data)
 summary(model_log_transformed)
 
-# 3. Sanity Checks on Transformed Model (on filtered data)
+# Sanity Checks on Transformed Model
 par(mfrow = c(2, 2))
 plot(model_log_transformed)
 par(mfrow = c(1, 1))
@@ -140,6 +136,49 @@ vif(model_log_transformed)
 Following a log transformation of the target variable (Tuition_USD), the coefficients now represent the change in the logarithm of tuition: a one-unit increase in the Living Cost Index is associated with an approximate -3.8% change, while a one USD increase in insurance and rent corresponds to roughly 0.05% and 0.21% increases in tuition, respectively; Master's programs still exhibit a statistically significant lower tuition of approximately -28% compared to Bachelor's, whereas the non-significant lower tuition for PhD programs is about -15%, and each additional year of program duration is associated with an approximate -6.6% change in tuition, also not statistically significant; although the R-squared has decreased to 0.4477 (Adjusted R-squared = 0.4436), indicating that this model explains less variance in the log of tuition, the overall model remains statistically significant (p < 2.2e-16), and the suitability of this transformation hinges on whether it better addresses the previously identified assumption violations.
 
 The sanity checks on the log-transformed model reveal mixed results: the "Residuals vs Fitted" plot shows a possible improvement in linearity with a less pronounced curve, but heteroscedasticity persists as suggested by the "Scale-Location" plot and the increasing spread of residuals; concerningly, the "Q-Q Residuals" plot and a highly significant Shapiro-Wilk test (p<2.2e−16) indicate that the log transformation has not improved the non-normality of the residuals, and similarly, the Durbin-Watson statistic of 1.1123 with a very small p-value (<2.2e−16) confirms that significant positive autocorrelation remains unresolved; on a positive note, multicollinearity continues to appear low based on the VIF values.
+
+## Bootstrap
+
+```{r}
+library(glmnet)
+
+x <- model.matrix(log(Tuition_USD) ~ Living_Cost_Index + Insurance_USD + Rent_USD + Level + Duration_Years, data = filtered_data)[, -1]
+y <- log(filtered_data$Tuition_USD)
+
+lasso_model <- glmnet(x, y, alpha = 1)
+cv_lasso <- cv.glmnet(x, y, alpha = 1, nfolds = 10)
+best_lambda_lasso <- cv_lasso$lambda.min
+lasso_model_best <- glmnet(x, y, alpha = 1, lambda = best_lambda_lasso)
+
+library(boot)
+
+
+boot_lasso_coef <- function(data, indices) {
+  d <- data[indices, ] # Resample the data
+
+  d$Level <- as.factor(d$Level)
+
+  x_boot <- model.matrix(log.Tuition_USD ~ Living_Cost_Index + Insurance_USD + Rent_USD + Level + Duration_Years, data = d)[, -1]
+  y_boot <- d$log.Tuition_USD
+  model <- glmnet(x_boot, y_boot, alpha = 1, lambda = best_lambda_lasso, lambda.min.ratio = 1e-5) # Refit Lasso
+  return(as.vector(coef(model)))
+}
+
+boot_data <- data.frame(log(filtered_data$Tuition_USD), filtered_data[, c("Living_Cost_Index", "Insurance_USD", "Rent_USD", "Level", "Duration_Years")])
+names(boot_data)[1] <- "log.Tuition_USD"
+
+boot_results <- boot(data = boot_data, statistic = boot_lasso_coef, R = 1000)
+
+print(boot_results)
+summary(boot_results)
+
+boot_ci <- confint(boot_results, type = "perc")
+print(boot_ci)
+```
+
+## Analysis
+Without direct glmnet standard errors for comparison in this specific run, the bootstrap analysis offers a valuable, non-parametric way to estimate the variability of our Lasso model coefficients by repeatedly resampling our data and refitting the model. The 95% bootstrap percentile confidence intervals provide a range of plausible values for each coefficient. Notably, the intervals for Living_Cost_Index ([-0.0459, -0.0252]), Insurance_USD ([0.00018, 0.00068]), and Rent_USD ([0.00179, 0.00220]) do not contain zero, further supporting their statistically significant effects (negative for Living_Cost_Index, positive for the others). Conversely, the confidence intervals for LevelMaster ([-0.500, 0.000]) and LevelPhD ([-0.365, 0.000]) include zero at the upper bound, suggesting that while the original estimates were negative, the effect might not be consistently strong across resampled datasets. The confidence interval for Duration_Years ([-0.1464, 0.1015] or [0.000, 0.101] in the updated interpretation) includes zero, consistent with Lasso's shrinkage of this coefficient to zero, indicating its non-significant contribution in the regularized model. Overall, the bootstrap results generally corroborate the significance and direction of the effects identified earlier, offering a more robust assessment of our model, especially in the absence of glmnet standard errors.
+
 
 While the log transformation might have slightly improved linearity and homoscedasticity, we still have significant violations of:
 Homoscedasticity , Normality  , Independence of Errors (Autocorrelation)
@@ -159,7 +198,7 @@ predictors_of_interest <- c("Living_Cost_Index", "Insurance_USD", "Rent_USD", "L
 formula_str_log <- paste("log(", target_variable, ") ~", paste(predictors_of_interest, collapse = " + "))
 model_log_robust <- lm(formula_str_log, data = filtered_data)
 
-# Calculate robust standard errors using HC3 estimator (a common type)
+# Calculate robust standard errors  
 robust_se <- vcovHC(model_log_robust, type = "HC3")
 
 robust_summary <- coeftest(model_log_robust, vcov. = robust_se)
@@ -196,7 +235,7 @@ folds <- cut(sample(1:n), breaks = k, labels = FALSE)
 
 cv_rmse_glm <- numeric(k)
 
-# Perform k-fold cross-validation using glm()
+# Perform k-fold cross-validation 
 for (i in 1:k) {
   # Create training and validation sets for the current fold
   validation_indices <- which(folds == i, arr.ind = TRUE)
@@ -218,7 +257,7 @@ cat("Mean CV RMSE (using glm):", mean(cv_rmse_glm), "\n")
 ```
 
 ```{r}
-# Build the full model (same as before)
+# Build the full model 
 full_model <- lm(log(Tuition_USD) ~ Living_Cost_Index + Insurance_USD + Rent_USD + Level + Duration_Years,
                  data = filtered_data)
 
@@ -235,8 +274,7 @@ The cross-validation results, displaying RMSE values ranging from about 0.77 to 
 We should consider regularization techniques primarily for three key reasons: to mitigate the potential instability in coefficient estimates arising from multicollinearity, even if our VIFs are mostly acceptable; to leverage the variable selection capabilities of Lasso (which can drive coefficients to zero) and the balanced approach of Elastic Net; and to potentially enhance the model's ability to generalize to new data by penalizing complexity, especially if some degree of overfitting is present.
 
 ```{r}
-# Install and load the glmnet package if you haven't already
-# install.packages("glmnet")
+
 library(glmnet)
 
 # Convert factor variable 'Level' to dummy variables
@@ -281,6 +319,5 @@ Our analysis suggests that Living_Cost_Index, Insurance_USD, Rent_USD, and the L
 While we addressed some of the violations of linear regression assumptions through log transformation and robust standard errors, potential remaining non-linearity and autocorrelation should be acknowledged as limitations of this model. The use of regularization techniques like Lasso provided a more parsimonious model by performing variable selection.
 
 In conclusion, this analysis provides a valuable approximation of the relationships between the selected factors and international tuition costs. However, future research could explore the counterintuitive relationship with the living cost index, investigate potential non-linear effects, consider additional relevant predictors, and delve into more advanced modeling techniques to further refine our understanding of this complex phenomenon. Remember that our statistical model is a simplification of reality, and further investigation could uncover more nuanced relationships.
-
 
 
