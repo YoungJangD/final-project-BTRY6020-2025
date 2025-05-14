@@ -2,8 +2,9 @@
 title: "Final Project Analysis"
 author: "Young Jang"
 date: "2025-05-06"
-output: html_document
-
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 # Introduction
@@ -14,9 +15,9 @@ The cost of international education is a significant consideration for students 
 
 We utilize multiple linear regression to model the relationship between the continuous target variable, Tuition_USD, and several predictor variables. The basic form of the model is:
 
-Y=β0+β1X1 +β2X2+⋯+βpXp+ϵ
+Y=B0+B1X1 +B2X2+⋯+BpXp+e
 
-Where Y represents Tuition_USD (after a log transformation to address initial assumption violations), Xirepresent the predictor variables (Living_Cost_Index, Insurance_USD, Rent_USD, Level (treated as a factor), and Duration_Years), βi are the coefficients quantifying the relationship between each predictor and the target, and ϵ is the error term.
+Where Y represents Tuition_USD (after a log transformation to address initial assumption violations), Xirepresent the predictor variables (Living_Cost_Index, Insurance_USD, Rent_USD, Level (treated as a factor), and Duration_Years), Bi are the coefficients quantifying the relationship between each predictor and the target, and e is the error term.
 
 We initially checked the key assumptions of linear regression: linearity, independence of errors, homoscedasticity, normality of errors, and low multicollinearity using visual diagnostics (residual plots, Q-Q plots) and statistical tests (Durbin-Watson, Breusch-Pagan, Shapiro-Wilk, VIF).
 
@@ -38,28 +39,28 @@ After filtering out rows where Tuition_USD was zero (as the logarithm of zero is
 
 ## Develope Hypothesis
 Hypothesis 1 (Living Cost Index): 
-Null Hypothesis (H₀): There is no significant linear relationship between the Living Cost Index and Tuition_USD (after log transformation)
-Alternative Hypothesis (H₁): There is a significant linear relationship between the Living Cost Index and Tuition_USD (after log transformation)
+Null Hypothesis (H0): There is no significant linear relationship between the Living Cost Index and Tuition_USD (after log transformation)
+Alternative Hypothesis (H1): There is a significant linear relationship between the Living Cost Index and Tuition_USD (after log transformation)
 
 Hypothesis 2 (Insurance USD): 
-Null Hypothesis (H₀): There is no significant linear relationship between the cost of Insurance and Tuition_USD (after log transformation)
-Alternative Hypothesis (H₁): There is a significant linear relationship between the cost of Insurance and Tuition_USD (after log transformation)
+Null Hypothesis (H0): There is no significant linear relationship between the cost of Insurance and Tuition_USD (after log transformation)
+Alternative Hypothesis (H1): There is a significant linear relationship between the cost of Insurance and Tuition_USD (after log transformation)
 
 Hypothesis 3 (Rent USD): 
-Null Hypothesis (H₀): There is no significant linear relationship between the average monthly Rent and Tuition_USD (after log transformation)
-Alternative Hypothesis (H₁): There is a significant linear relationship between the average monthly Rent and Tuition_USD (after log transformation)
+Null Hypothesis (H0): There is no significant linear relationship between the average monthly Rent and Tuition_USD (after log transformation)
+Alternative Hypothesis (H1): There is a significant linear relationship between the average monthly Rent and Tuition_USD (after log transformation)
 
 Hypothesis 4 (Duration Years): 
-Null Hypothesis (H₀): There is no significant linear relationship between the Duration of the program and Tuition_USD (after log transformation)
-Alternative Hypothesis (H₁): There is a significant linear relationship between the Duration of the program and Tuition_USD (after log transformation)
+Null Hypothesis (H0): There is no significant linear relationship between the Duration of the program and Tuition_USD (after log transformation)
+Alternative Hypothesis (H1): There is a significant linear relationship between the Duration of the program and Tuition_USD (after log transformation)
 
 Hypothesis 5 (Level - Master): 
-Null Hypothesis (H₀): There is no significant difference in Tuition_USD (after log transformation) between Master's programs and Bachelor's programs
-Alternative Hypothesis (H₁): There is a significant difference in Tuition_USD (after log transformation) between Master's programs and Bachelor's programs
+Null Hypothesis (H0): There is no significant difference in Tuition_USD (after log transformation) between Master's programs and Bachelor's programs
+Alternative Hypothesis (H1): There is a significant difference in Tuition_USD (after log transformation) between Master's programs and Bachelor's programs
 
 Hypothesis 6 (Level - PhD): 
-Null Hypothesis (H₀): There is no significant difference in Tuition_USD (after log transformation) between PhD programs and Bachelor's programs
-Alternative Hypothesis (H₁): There is a significant difference in Tuition_USD (after log transformation) between PhD programs and Bachelor's programs
+Null Hypothesis (H0): There is no significant difference in Tuition_USD (after log transformation) between PhD programs and Bachelor's programs
+Alternative Hypothesis (H1): There is a significant difference in Tuition_USD (after log transformation) between PhD programs and Bachelor's programs
 
 
 
@@ -312,6 +313,11 @@ Based on the best Lasso model identified through cross-validation for predicting
 
 ## Results
 In our analysis to pinpoint factors influencing international education tuition costs (Tuition_USD), focusing on Living_Cost_Index, Insurance_USD, Rent_USD, Level of study, and Duration_Years, we initially built an Ordinary Least Squares (OLS) model which revealed potential violations of key regression assumptions; to mitigate these, we applied a log transformation to Tuition_USD, yielding some improvement in residual plots but not fully resolving all issues, and subsequently employed robust standard errors for more reliable inference amidst heteroscedasticity; 10-fold cross-validation of this log-transformed model indicated reasonable generalization (mean RMSE ≈ 0.9287); further exploring regularization techniques (Ridge, Lasso, Elastic Net) to enhance generalization and address potential multicollinearity, both Lasso and Elastic Net performed variable selection by excluding Duration_Years; our final interpretation, based on the best Lasso model, suggests that Living_Cost_Index has a statistically significant negative association with tuition (≈ 3.5% lower per unit increase), while Insurance_USD (≈ 0.04% higher per USD increase) and Rent_USD (≈ 0.20% higher per USD increase) show statistically significant positive associations; Master's programs have significantly lower tuition (≈ 19% lower) compared to Bachelor's, and PhD programs also tend to have lower tuition (≈ 16% lower), although this was less statistically significant in the regularized models, with Duration_Years being excluded as a significant predictor by the Lasso model.
+
+## Discussion and limitations
+Our study aimed to understand what influences international education tuition costs, and our analysis revealed some interesting points. We found a surprising trend where higher living costs were linked to slightly lower tuition, while expectedly, higher insurance and rent costs were associated with higher tuition. The level of study also played a role, with Master's and PhD programs generally being less expensive than Bachelor's. Interestingly, the length of the program didn't seem to have a direct impact on yearly tuition when other factors were considered. Overall, our model explained a good portion of the differences in tuition costs, suggesting these factors are important.
+
+However, it's important to consider some limitations of our study. We encountered some mathematical issues in our analysis, which could affect the accuracy of our results. We also didn't have data on all the possible factors that could influence tuition, such as a school's reputation or available financial aid, which might give us an incomplete picture. The unexpected link between living costs and tuition needs more investigation as it might be more complex than our model suggests. Additionally, our model's accuracy is based on the data we had, and it might not perform the same with new information. Finally, our use of percentages to explain changes in tuition, while mathematically necessary, can sometimes be less straightforward to interpret. Therefore, while our findings offer valuable insights, future research should explore additional factors, investigate more complex relationships, and address the identified mathematical limitations to gain a more complete understanding of international education pricing
 
 ## Conclustion
 Our analysis suggests that Living_Cost_Index, Insurance_USD, Rent_USD, and the Level of study are important factors influencing international education tuition costs. Interestingly, higher living costs appear to be associated with lower tuition, a relationship that warrants further investigation beyond the scope of this analysis. As expected, higher insurance and rent costs are associated with higher tuition fees. Master's and PhD programs tend to have lower tuition than Bachelor's programs. The duration of the program, as a linear predictor, did not appear to be a significant factor in the regularized model.

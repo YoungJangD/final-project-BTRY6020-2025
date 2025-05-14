@@ -376,12 +376,12 @@ international education costs.</p>
 <p>We utilize multiple linear regression to model the relationship
 between the continuous target variable, Tuition_USD, and several
 predictor variables. The basic form of the model is:</p>
-<p>Y=β0+β1X1 +β2X2+⋯+βpXp+ϵ</p>
+<p>Y=B0+B1X1 +B2X2+⋯+BpXp+e</p>
 <p>Where Y represents Tuition_USD (after a log transformation to address
 initial assumption violations), Xirepresent the predictor variables
 (Living_Cost_Index, Insurance_USD, Rent_USD, Level (treated as a
-factor), and Duration_Years), βi are the coefficients quantifying the
-relationship between each predictor and the target, and ϵ is the error
+factor), and Duration_Years), Bi are the coefficients quantifying the
+relationship between each predictor and the target, and e is the error
 term.</p>
 <p>We initially checked the key assumptions of linear regression:
 linearity, independence of errors, homoscedasticity, normality of
@@ -423,34 +423,34 @@ tuition.</p>
 </div>
 <div id="develope-hypothesis" class="section level2">
 <h2>Develope Hypothesis</h2>
-<p>Hypothesis 1 (Living Cost Index): Null Hypothesis (H₀): There is no
+<p>Hypothesis 1 (Living Cost Index): Null Hypothesis (H0): There is no
 significant linear relationship between the Living Cost Index and
-Tuition_USD (after log transformation) Alternative Hypothesis (H₁):
+Tuition_USD (after log transformation) Alternative Hypothesis (H1):
 There is a significant linear relationship between the Living Cost Index
 and Tuition_USD (after log transformation)</p>
-<p>Hypothesis 2 (Insurance USD): Null Hypothesis (H₀): There is no
+<p>Hypothesis 2 (Insurance USD): Null Hypothesis (H0): There is no
 significant linear relationship between the cost of Insurance and
-Tuition_USD (after log transformation) Alternative Hypothesis (H₁):
+Tuition_USD (after log transformation) Alternative Hypothesis (H1):
 There is a significant linear relationship between the cost of Insurance
 and Tuition_USD (after log transformation)</p>
-<p>Hypothesis 3 (Rent USD): Null Hypothesis (H₀): There is no
+<p>Hypothesis 3 (Rent USD): Null Hypothesis (H0): There is no
 significant linear relationship between the average monthly Rent and
-Tuition_USD (after log transformation) Alternative Hypothesis (H₁):
+Tuition_USD (after log transformation) Alternative Hypothesis (H1):
 There is a significant linear relationship between the average monthly
 Rent and Tuition_USD (after log transformation)</p>
-<p>Hypothesis 4 (Duration Years): Null Hypothesis (H₀): There is no
+<p>Hypothesis 4 (Duration Years): Null Hypothesis (H0): There is no
 significant linear relationship between the Duration of the program and
-Tuition_USD (after log transformation) Alternative Hypothesis (H₁):
+Tuition_USD (after log transformation) Alternative Hypothesis (H1):
 There is a significant linear relationship between the Duration of the
 program and Tuition_USD (after log transformation)</p>
-<p>Hypothesis 5 (Level - Master): Null Hypothesis (H₀): There is no
+<p>Hypothesis 5 (Level - Master): Null Hypothesis (H0): There is no
 significant difference in Tuition_USD (after log transformation) between
-Master’s programs and Bachelor’s programs Alternative Hypothesis (H₁):
+Master’s programs and Bachelor’s programs Alternative Hypothesis (H1):
 There is a significant difference in Tuition_USD (after log
 transformation) between Master’s programs and Bachelor’s programs</p>
-<p>Hypothesis 6 (Level - PhD): Null Hypothesis (H₀): There is no
+<p>Hypothesis 6 (Level - PhD): Null Hypothesis (H0): There is no
 significant difference in Tuition_USD (after log transformation) between
-PhD programs and Bachelor’s programs Alternative Hypothesis (H₁): There
+PhD programs and Bachelor’s programs Alternative Hypothesis (H1): There
 is a significant difference in Tuition_USD (after log transformation)
 between PhD programs and Bachelor’s programs</p>
 <pre class="r"><code>library(lmtest)</code></pre>
@@ -763,37 +763,37 @@ print(boot_results)</code></pre>
 ## 
 ## 
 ## Bootstrap Statistics :
-##          original        bias     std. error
-## t1*  9.4397046723  7.810424e-02 3.505666e-01
-## t2* -0.0362672676 -1.644282e-04 5.198977e-03
-## t3*  0.0004228770  9.065921e-06 1.271978e-04
-## t4*  0.0020116171  7.701922e-07 9.552375e-05
-## t5* -0.2157678196 -3.221043e-02 1.268488e-01
-## t6* -0.1836664029  1.739607e-02 9.130227e-02
-## t7* -0.0004731693 -2.182287e-02 6.185456e-02</code></pre>
+##         original        bias     std. error
+## t1*  9.401704747  3.441355e-02 3.199181e-01
+## t2* -0.035351199  1.218172e-04 5.133966e-03
+## t3*  0.000406175  5.882500e-06 1.206182e-04
+## t4*  0.001995918 -5.310504e-06 9.930503e-05
+## t5* -0.208819651 -1.947224e-02 1.169538e-01
+## t6* -0.173961879  4.296544e-03 9.102214e-02
+## t7*  0.000000000 -1.118835e-02 5.350364e-02</code></pre>
 <pre class="r"><code>summary(boot_results)</code></pre>
 <pre><code>## 
 ## Number of bootstrap replications R = 1000 
 ##      original    bootBias     bootSE     bootMed
-## 1  9.43970467  7.8104e-02 3.5057e-01  9.50084164
-## 2 -0.03626727 -1.6443e-04 5.1990e-03 -0.03657190
-## 3  0.00042288  9.0659e-06 1.2720e-04  0.00043015
-## 4  0.00201162  7.7019e-07 9.5524e-05  0.00201021
-## 5 -0.21576782 -3.2210e-02 1.2685e-01 -0.24482909
-## 6 -0.18366640  1.7396e-02 9.1302e-02 -0.16819436
-## 7 -0.00047317 -2.1823e-02 6.1855e-02 -0.00101937</code></pre>
+## 1  9.40170475  3.4414e-02 3.1992e-01  9.42970783
+## 2 -0.03535120  1.2182e-04 5.1340e-03 -0.03516137
+## 3  0.00040618  5.8825e-06 1.2062e-04  0.00041205
+## 4  0.00199592 -5.3105e-06 9.9305e-05  0.00198968
+## 5 -0.20881965 -1.9472e-02 1.1695e-01 -0.22211321
+## 6 -0.17396188  4.2965e-03 9.1022e-02 -0.17043159
+## 7  0.00000000 -1.1188e-02 5.3504e-02  0.00000000</code></pre>
 <pre class="r"><code>boot_ci &lt;- confint(boot_results, type = &quot;perc&quot;)
 print(boot_ci)</code></pre>
 <pre><code>## Bootstrap percent confidence intervals
 ## 
-##           2.5 %       97.5 %
-## 1  8.8816233179 10.270615586
-## 2 -0.0456398908 -0.025877341
-## 3  0.0001861746  0.000700771
-## 4  0.0018199347  0.002198982
-## 5 -0.5229408744  0.000000000
-## 6 -0.3522787486  0.000000000
-## 7 -0.1637923046  0.093836666</code></pre>
+##          2.5 %        97.5 %
+## 1  8.789726966 10.1239824239
+## 2 -0.044803690 -0.0250268522
+## 3  0.000182318  0.0006475189
+## 4  0.001789182  0.0021848871
+## 5 -0.491820128  0.0000000000
+## 6 -0.350698878  0.0000000000
+## 7 -0.139872302  0.0952117424</code></pre>
 </div>
 <div id="analysis-2" class="section level2">
 <h2>Analysis</h2>
@@ -1153,6 +1153,36 @@ PhD programs also tend to have lower tuition (≈ 16% lower), although
 this was less statistically significant in the regularized models, with
 Duration_Years being excluded as a significant predictor by the Lasso
 model.</p>
+</div>
+<div id="discussion-and-limitations" class="section level2">
+<h2>Discussion and limitations</h2>
+<p>Our study aimed to understand what influences international education
+tuition costs, and our analysis revealed some interesting points. We
+found a surprising trend where higher living costs were linked to
+slightly lower tuition, while expectedly, higher insurance and rent
+costs were associated with higher tuition. The level of study also
+played a role, with Master’s and PhD programs generally being less
+expensive than Bachelor’s. Interestingly, the length of the program
+didn’t seem to have a direct impact on yearly tuition when other factors
+were considered. Overall, our model explained a good portion of the
+differences in tuition costs, suggesting these factors are
+important.</p>
+<p>However, it’s important to consider some limitations of our study. We
+encountered some mathematical issues in our analysis, which could affect
+the accuracy of our results. We also didn’t have data on all the
+possible factors that could influence tuition, such as a school’s
+reputation or available financial aid, which might give us an incomplete
+picture. The unexpected link between living costs and tuition needs more
+investigation as it might be more complex than our model suggests.
+Additionally, our model’s accuracy is based on the data we had, and it
+might not perform the same with new information. Finally, our use of
+percentages to explain changes in tuition, while mathematically
+necessary, can sometimes be less straightforward to interpret.
+Therefore, while our findings offer valuable insights, future research
+should explore additional factors, investigate more complex
+relationships, and address the identified mathematical limitations to
+gain a more complete understanding of international education
+pricing</p>
 </div>
 <div id="conclustion" class="section level2">
 <h2>Conclustion</h2>
